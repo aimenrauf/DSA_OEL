@@ -1,9 +1,21 @@
+import heapq
 class Parking_lot_System:
     def __init__(self):
         self.slots = {
-    "A": [[None for _ in range(4)] for _ in range(3)],
-    "B": [[None for _ in range(4)] for _ in range(3)]
-}
+            "A": [[None for _ in range(4)] for _ in range(3)],
+            "B": [[None for _ in range(4)] for _ in range(3)]
+        }
+        self.pqueue = []  
+        self.location = {}  
+        self.priorityQueue()
+
+    def priorityQueue(self):
+        for zone in ['A', 'B']:
+            for level in range(len(self.slots[zone])):
+                for slot in range(len(self.slots[zone][level])):
+                    priority = 1 if zone == 'A' else 2
+                    heapq.heappush(self.pqueue, (priority, zone, level, slot))
+
     def show_Slots(self):
         for zone in self.slots:  
             print(f"\nZone {zone} Status:")
@@ -28,61 +40,68 @@ class Parking_lot_System:
                 print("No available slots in this zone.")
 
     def display(self):
-        print("Welcome to Smart City Parking System")
+        print("\nWelcome to Smart City Parking System")
         print("1. Park a Vehicle")
         print("2. Remove a Vehicle")
         print("3. Show All Parking Slots")
-        print("4. Show Available Slots for EVs")
+        print("4. Show Available Slots")
         print("5. Show Priority Vehicles")
         print("6. Exit")
-    
-    def park(self, zone, level, slot, number, vehicle_type):
-        if self.slots[zone][level][slot] is None:
-            self.slots[zone][level][slot] = {
-                "number": number,
-                "type": vehicle_type
-            }
-            print(f"Vehicle {number} parked at Zone {zone}, Level {level + 1}, Slot {slot + 1}")
-        else:
-            print("Slot already occupied.")
-    def remove(self, zone, level, slot):
-        try:
-            if self.slots[zone][level][slot] is not None:
-                vehicle = self.slots[zone][level][slot]
-                print(f"Removing vehicle {vehicle['number']} from Zone {zone}, Level {level + 1}, Slot {slot + 1}")
-                self.slots[zone][level][slot] = None
-            else:
-                print("No vehicle parked in this slot.")
-        except (KeyError, IndexError):
-            print("Invalid zone, level, or slot! Please check your input.")
 
+    def park(self, number, type):
+        if not self.pqueue:
+            print("Parking lot is full!")
+            return       
+        priority, zone, level, slot = heapq.heappop(self.pqueue)
+        self.slots[zone][level][slot] = {
+            "number": number,
+            "type": type
+        }
+        self.location[number] = (zone, level, slot)
+        print(f"Vehicle {number} parked at Zone {zone}, Level {level + 1}, Slot {slot + 1}")
+
+    def remove(self, number):
+        if number not in self.location:
+            print("Vehicle not found!")
+            return       
+        zone, level, slot = self.location[number]
+        print(f"Removing vehicle {number} from Zone {zone}, Level {level + 1}, Slot {slot + 1}")
+        self.slots[zone][level][slot] = None
+        priority = 1 if zone == 'A' else 2
+        heapq.heappush(self.pqueue, (priority, zone, level, slot))
+        del self.location[number]
+
+    def priority_vehicles(self):
+        print("\nPriority Vehicles (Zone A):")
+        found = False
+        for level in range(len(self.slots['A'])):
+            for slot in range(len(self.slots['A'][level])):
+                data = self.slots['A'][level][slot]
+                if data:
+                    print(f"  {data['number']} ({data['type']}) at Level {level+1}, Slot {slot+1}")
+                    found = True
+        if not found:
+            print("No priority vehicles parked.")
 
 system = Parking_lot_System()
-system.display()
-while (True):
-      
-    choice = input("Choose Option: ")
-        
+while True:
+    system.display()
+    choice = input("\nChoose Option: ")   
     if choice == '1':
-        zone = input("Enter Zone (A/B): ").upper()         
-        level = int(input("Enter Level (1-2): ")) - 1      
-        slot = int(input("Enter Slot (1-3): ")) - 1        
-        number = input("Enter Vehicle Number: ")           
-        vehicle_type = input("Enter Vehicle Type: ")
-        system.park(zone,level,slot,number,type)
+        number = input("Enter Vehicle Number: ")
+        type = input("Enter Vehicle Type: ")
+        system.park(number, type)
     elif choice == '2':
-        zone = input("Enter Zone (A/B): ").upper()
-        level = int(input("Enter Level (1-2): ")) - 1
-        slot = int(input("Enter Slot (1-3): ")) - 1
-        system.remove(zone,level,slot)
+        number = input("Enter Vehicle Number to Remove: ")
+        system.remove(number)
     elif choice == '3':
         system.show_Slots()
     elif choice == '4':
-        system.available_Slots()  
+        system.available_Slots()
     elif choice == '5':
-        print("Priority Vehicles:")  
+        system.priority_vehicles()
     elif choice == '6':
         print("Exiting...")
         break
     else:
-        print("Invalid Option. Please try again.")           
+        print("Invalid Option. Please try again.")
